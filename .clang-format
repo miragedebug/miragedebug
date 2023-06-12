@@ -1,0 +1,9 @@
+---
+Language:     Cpp
+BasedOnStyle: Google
+---
+Language: Proto
+BasedOnStyle: Google
+IndentWidth:     4
+AlignConsecutiveAssignments: true
+CommentPragmas: XValidation

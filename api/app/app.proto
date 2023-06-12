@@ -1,0 +1,211 @@
+syntax = "proto3";
+
+option go_package = "github.com/kebe7jun/miragedebug/api/app";
+
+package miragedebug.api.app;
+
+import "google/api/annotations.proto";
+
+enum WorkloadType {
+    WORKLOAD_TYPE_UNSPECIFIED = 0;
+    DEPLOYMENT                = 1;
+    STATEFULSET               = 2;
+}
+
+enum ArchType {
+    ARCH_TYPE_UNSPECIFIED = 0;
+    AMD64                 = 1;
+    ARM64                 = 2;
+}
+
+message RemoteRuntime {
+    // Namespace is the namespace of the pod.
+    string namespace = 1;
+    // WorkloadType is the type of workload.
+    // Such as deployment, statefulset etc.
+    WorkloadType workloadType = 2;
+    // WorkloadName is the name of the workload.
+    string workloadName = 3;
+    // ContainerName is the name of the container to debug.
+    // We will select the first container or default container if not specified.
+    string containerName = 4;
+    // TargetArch is the architecture of the application in the container.
+    // This is used to determine the correct binary to build.
+    // If your OS is amd64, but want to debug container in arm64,
+    // this should be set to "arm64".
+    ArchType targetArch = 5;
+}
+
+enum DebugToolType {
+    DEBUG_TOOL_TYPE_UNSPECIFIED = 0;
+    LOCAL                       = 1;
+    REMOTE                      = 2;
+}
+
+// DebugToolBuilder is the interface to build debug tool.
+message DebugToolBuilder {
+    // Type is the type of debug tool.
+    // Such as local, remote
+    DebugToolType type = 1;
+    // BuildCommands is the commands to build debug tool.
+    // If Type is local, we will run these commands locally,
+    // And copy LocalDest to container of RemoteConfig.DebugToolPath.
+    // Else, use kubectl exec run commands in container.
+    repeated string buildCommands = 2;
+    // If Type is local, specify local debugger tool file path.
+    string localDest = 3;
+}
+
+message RemoteConfig {
+    // DebugToolPath is the path of the debug tool in container.
+    // Such as dlv, gdb etc.
+    // empty means no debug tool installed.
+    string debugToolPath = 1;
+    // RemoteAppLocation is the location of the application in container.
+    // Such as /tmp
+    string remoteAppLocation = 2;
+    // RemoteDebuggingPort is the port to use for remote debugging.
+    // This is the port that the IDE will connect to.
+    // This port will be both listened on the host(local) and the container,
+    // make sure your local and program in the container will not listen on this
+    // port.
+    int32 remoteDebuggingPort = 3;
+    // CustomDebugCommand is the custom debug command to run in container.
+    // Such as "dlv debug --headless --listen=:2345 --api-version=2"
+    // empty means no custom debug command.
+    string customDebugCommand = 4;
+    // InitialConfig is the initial config of the workload spec.
+    // This is used to restore the original config after debugging.
+    string initialConfig = 5;
+}
+
+enum IDEType {
+    IDE_TYPE_UNSPECIFIED = 0;
+    VS_CODE              = 1;
+    GOLAND               = 2;
+}
+
+message LocalConfig {
+    // IDEType is the type of IDE to use.
+    // Such as "vscode", "goland" etc.
+    IDEType ideType = 1;
+    // DebugToolBuilder defines the builder of DebugTool
+    DebugToolBuilder debugToolBuilder = 2;
+    // WorkingDir is the location of the application in local.
+    // Such as /Users/kebeliu/workspace/miragedebug
+    string workingDir = 3;
+    // AppEntryPath is the entry path of the application in local.
+    // Such as cmd/main.go or cmd/
+    string appEntryPath = 4;
+    // AppArgs is the running args of the application.
+    // Such as "--config=config.yaml --debug",
+    string appArgs = 5;
+    // CustomBuildCommand is the custom build command to run in local.
+    // Such as "go build -o /tmp/miragedebug"
+    // empty means no custom build command.
+    string customBuildCommand = 6;
+    // BuildOutput is the output of the build command.
+    // Such as /tmp/miragedebug
+    string buildOutput = 7;
+    // Metadata is the metadata of the IDE or language, such as GO version.
+    map<string, string> metadata = 8;
+}
+
+enum ProgramType {
+    PROGRAM_TYPE_UNSPECIFIED = 0;
+    GO                       = 1;
+    JAVA                     = 2;
+    PYTHON                   = 3;
+}
+
+message App {
+    string name = 1;
+    // ProgramType is the type of program to debug.
+    // Such as go, java, python
+    ProgramType programType = 2;
+    // RemoteRuntime is the runtime to debug.
+    RemoteRuntime remoteRuntime = 3;
+    // RemoteConfig is the config to debug.
+    RemoteConfig remoteConfig = 4;
+    // LocalConfig is the config to debug.
+    LocalConfig localConfig = 5;
+}
+
+message Status {
+    // AppName is the name of the app.
+    string appName = 1;
+    // Configured indicates whether the app is configured(change command and
+    // args).
+    bool configured = 2;
+    // Connected indicates whether the port-forward is connected.
+    bool connected = 3;
+    // Debugging indicates whether the app is debugging.
+    bool debugging = 4;
+    // Error indicates the error message.
+    string error = 5;
+    // DebugToolPath is the path of the debug tool execute binary in container.
+    // Such as /tmp/dlv-amd64
+    string debugToolPath = 6;
+}
+
+message SingleAppRequest {
+    string name = 1;
+}
+
+message AppList {
+    repeated App apps = 1;
+}
+
+message Empty {}
+
+service AppManagement {
+    rpc ListApps(Empty) returns (AppList) {
+        option (google.api.http) = {
+            get: "/api/v1/apps"
+        };
+    }
+    rpc CreateApp(App) returns (App) {
+        option (google.api.http) = {
+            post: "/api/v1/apps"
+            body: "*"
+        };
+    }
+    rpc GetApp(SingleAppRequest) returns (App) {
+        option (google.api.http) = {
+            get: "/api/v1/apps/{name}"
+        };
+    }
+    rpc GetAppStatus(SingleAppRequest) returns (Status) {
+        option (google.api.http) = {
+            get: "/api/v1/apps/{name}/status"
+        };
+    }
+    // InitAppRemote will do the following things:
+    // 1. config the workload to ready for debug.
+    //   a. change command and args.
+    //   b. change the replica to 1 and other things.
+    // 2. installing debug tool in container.
+    // 3. port-forward the remote debugging port.
+    rpc InitAppRemote(SingleAppRequest) returns (Status) {
+        option (google.api.http) = {
+            post: "/api/v1/apps/{name}/init-remote"
+            body: "*"
+        };
+    }
+    // StartDebugging will do the following things:
+    // 1. copy the local binary to container.
+    // 2. start debug tool in container.
+    rpc StartDebugging(SingleAppRequest) returns (Empty) {
+        option (google.api.http) = {
+            post: "/api/v1/apps/{name}/debugging"
+            body: "*"
+        };
+    }
+    // RollbackApp will rollback the app to the initial config.
+    rpc RollbackApp(SingleAppRequest) returns (Status) {
+        option (google.api.http) = {
+            post: "/api/v1/apps/{name}/rollback"
+            body: "*"
+        };
+    }
+}
