@@ -9,7 +9,7 @@ import "google/api/annotations.proto";
 enum WorkloadType {
     WORKLOAD_TYPE_UNSPECIFIED = 0;
     DEPLOYMENT                = 1;
-    STATEFULSET               = 2;
+    DAEMONSET                 = 2;
 }
 
 enum ArchType {

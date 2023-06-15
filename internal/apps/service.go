@@ -108,6 +108,12 @@ func (a *appManagement) getAppRelatedWorkloadTemplate(ctx context.Context, app_ 
 			return nil, err
 		}
 		return &dep.Spec.Template, nil
+	case app.WorkloadType_DAEMONSET:
+		dep, err := a.kubeclient.AppsV1().DaemonSets(app_.RemoteRuntime.Namespace).Get(ctx, app_.RemoteRuntime.WorkloadName, metav1.GetOptions{})
+		if err != nil {
+			return nil, err
+		}
+		return &dep.Spec.Template, nil
 	}
 	return nil, fmt.Errorf("unsupported workload type %s", app_.RemoteRuntime.WorkloadType.String())
 }
@@ -145,6 +151,14 @@ func (a *appManagement) setAppRelatedWorkloadTemplate(ctx context.Context, app_ 
 		}
 		dep.Spec.Template = tmpl
 		_, err = a.kubeclient.AppsV1().Deployments(app_.RemoteRuntime.Namespace).Update(ctx, dep, metav1.UpdateOptions{})
+		return err
+	case app.WorkloadType_DAEMONSET:
+		dep, err := a.kubeclient.AppsV1().DaemonSets(app_.RemoteRuntime.Namespace).Get(ctx, app_.RemoteRuntime.WorkloadName, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		dep.Spec.Template = tmpl
+		_, err = a.kubeclient.AppsV1().DaemonSets(app_.RemoteRuntime.Namespace).Update(ctx, dep, metav1.UpdateOptions{})
 		return err
 	}
 	return fmt.Errorf("unsupported workload type %s", app_.RemoteRuntime.WorkloadType.String())

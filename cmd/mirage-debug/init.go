@@ -63,6 +63,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 		BuildCommand string
 		BuildOutput  string
 		RunArgs      string
+		WorkloadType string
 	}{}
 	questions := []*survey.Question{
 		{
@@ -100,6 +101,14 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 				PageSize: 10,
 			},
 		},
+		{
+			Name: "workloadType",
+			Prompt: &survey.Select{
+				Message: "Choose a programing language:",
+				Options: []string{app.WorkloadType_DEPLOYMENT.String(), app.WorkloadType_DAEMONSET.String()},
+				Default: app.WorkloadType_DEPLOYMENT.String(),
+			},
+		},
 	}
 	err := survey.Ask(questions, &answers)
 	if err != nil {
@@ -107,13 +116,23 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 	}
 	workloadArgsMap := map[string][]string{}
 	promptWorkload := &survey.Select{
-		Message: "Please choose an workload:",
+		Message: "Please choose workload type:",
 		Options: func() []string {
-			depList, _ := kubeClient.AppsV1().Deployments(answers.Namespace).List(context.Background(), metav1.ListOptions{})
-			return lo.Map(depList.Items, func(item appsv1.Deployment, index int) string {
-				workloadArgsMap[item.Name] = item.Spec.Template.Spec.Containers[0].Args
-				return item.Name
-			})
+			switch answers.WorkloadType {
+			case app.WorkloadType_DEPLOYMENT.String():
+				depList, _ := kubeClient.AppsV1().Deployments(answers.Namespace).List(context.Background(), metav1.ListOptions{})
+				return lo.Map(depList.Items, func(item appsv1.Deployment, index int) string {
+					workloadArgsMap[item.Name] = item.Spec.Template.Spec.Containers[0].Args
+					return item.Name
+				})
+			case app.WorkloadType_DAEMONSET.String():
+				depList, _ := kubeClient.AppsV1().DaemonSets(answers.Namespace).List(context.Background(), metav1.ListOptions{})
+				return lo.Map(depList.Items, func(item appsv1.DaemonSet, index int) string {
+					workloadArgsMap[item.Name] = item.Spec.Template.Spec.Containers[0].Args
+					return item.Name
+				})
+			}
+			return nil
 		}(),
 		PageSize: 10,
 	}
@@ -186,7 +205,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 		ProgramType: app.ProgramType(app.ProgramType_value[answers.Language]),
 		RemoteRuntime: &app.RemoteRuntime{
 			Namespace:    answers.Namespace,
-			WorkloadType: app.WorkloadType_DEPLOYMENT,
+			WorkloadType: app.WorkloadType(app.WorkloadType_value[answers.WorkloadType]),
 			WorkloadName: workload,
 			TargetArch:   app.ArchType_AMD64,
 		},
