@@ -9,4 +9,4 @@ gen: format-proto
 .PHONY: gen
 
 build: gen
-	go build -o .mirage/bin/mirage-debug ./cmd/client
+	go build -o .mirage/bin/mirage-debug ./cmd

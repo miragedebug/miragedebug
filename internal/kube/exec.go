@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -16,7 +15,7 @@ import (
 	"github.com/kebe7jun/miragedebug/pkg/log"
 )
 
-func ExecutePodCmd(ctx context.Context, config *restclient.Config, namespace string, podName string, container string, command string, stdin io.Reader, logOut bool) (io.Reader, io.Reader, error) {
+func ExecutePodCmd(ctx context.Context, config *restclient.Config, namespace string, podName string, container string, command string, stdin io.Reader) ([]byte, []byte, error) {
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error creating clientset: %v", err)
@@ -29,7 +28,7 @@ func ExecutePodCmd(ctx context.Context, config *restclient.Config, namespace str
 	}
 	parameterCodec := runtime.NewParameterCodec(scheme)
 	req.VersionedParams(&corev1.PodExecOptions{
-		Command:   strings.Fields(command),
+		Command:   []string{"sh", "-c", command},
 		Container: container,
 		Stdin: func() bool {
 			if stdin != nil {
@@ -47,44 +46,14 @@ func ExecutePodCmd(ctx context.Context, config *restclient.Config, namespace str
 		return nil, nil, fmt.Errorf("error while creating Executor: %v", err)
 	}
 
+	log.Debugf("executing pod %s/%s command: %s", namespace, podName, command)
 	out := bytes.NewBuffer(nil)
 	errOut := bytes.NewBuffer(nil)
-	result := make(chan error)
-	end := make(chan struct{})
-	if logOut {
-		go func() {
-			outBuf := bytes.NewBuffer(nil)
-			for {
-				select {
-				case <-end:
-					return
-				default:
-					b, err := out.ReadByte()
-					if err != nil {
-						return
-					}
-					outBuf.WriteByte(b)
-					if b == '\n' {
-						log.Infof("pod %s/%s execute out: %s", namespace, podName, outBuf.String())
-						outBuf.Reset()
-					}
-				}
-			}
-		}()
-	}
-	go func() {
-		err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
-			Stdin:  stdin,
-			Stdout: out,
-			Stderr: errOut,
-			Tty:    false,
-		})
-		if err != nil {
-			result <- fmt.Errorf("error in StreamWithContext: %v", err)
-		} else {
-			result <- nil
-		}
-	}()
-	close(end)
-	return out, errOut, <-result
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
+		Stdin:  stdin,
+		Stdout: out,
+		Stderr: errOut,
+		Tty:    false,
+	})
+	return out.Bytes(), errOut.Bytes(), err
 }

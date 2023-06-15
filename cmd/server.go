@@ -9,12 +9,12 @@ import (
 	"github.com/kebe7jun/miragedebug/pkg/log"
 )
 
-func main() {
+func serverCmd() *cobra.Command {
 	httpAddr := ""
 	grpcAddr := ""
 	kubeconfig := ""
 	root := &cobra.Command{
-		Use: "mirage-debug-server",
+		Use: "server",
 		Args: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},
@@ -30,5 +30,5 @@ func main() {
 	root.PersistentFlags().StringVarP(&httpAddr, "http-addr", "", ":38080", "HTTP listen address.")
 	root.PersistentFlags().StringVarP(&grpcAddr, "grpc-addr", "", ":38081", "GRPC listen address.")
 	root.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "~/.kube/config", "Kubeconfig file path.")
-	root.Execute()
+	return root
 }

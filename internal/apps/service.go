@@ -14,6 +14,7 @@ import (
 	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/util/rand"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -23,7 +24,10 @@ import (
 	"github.com/kebe7jun/miragedebug/api/app"
 	"github.com/kebe7jun/miragedebug/config"
 	"github.com/kebe7jun/miragedebug/internal/kube"
-	"github.com/kebe7jun/miragedebug/internal/local/debug-tools/godlv"
+	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
+	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/golang"
+	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/rust"
+	debug_tools "github.com/kebe7jun/miragedebug/internal/local/debug-tools"
 	"github.com/kebe7jun/miragedebug/pkg/log"
 )
 
@@ -100,23 +104,21 @@ func (a *appManagement) updateAndSave(app_ *app.App) error {
 }
 
 func (a *appManagement) save(apps []*app.App) error {
-	a.rwlock.RLock()
-	defer a.rwlock.RUnlock()
 	bs, err := json.MarshalIndent(apps, "", "  ")
 	if err != nil {
 		return err
 	}
+	a.rwlock.RLock()
+	a.apps = apps
+	defer a.rwlock.RUnlock()
 	return os.WriteFile(path.Join(config.GetConfigRootPath(), appsJsonFileName), bs, 0644)
 }
 
 func (a *appManagement) saveSelf() error {
 	a.rwlock.RLock()
-	defer a.rwlock.RUnlock()
-	bs, err := json.Marshal(a.apps)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(path.Join(config.GetConfigRootPath(), appsJsonFileName), bs, 0644)
+	apps := a.apps
+	a.rwlock.RUnlock()
+	return a.save(apps)
 }
 
 func (a *appManagement) getAppRelatedWorkloadTemplate(ctx context.Context, app_ *app.App) (*corev1.PodTemplateSpec, error) {
@@ -132,8 +134,16 @@ func (a *appManagement) getAppRelatedWorkloadTemplate(ctx context.Context, app_ 
 }
 
 func (a *appManagement) getAppRelatedPod(ctx context.Context, app_ *app.App) (*corev1.Pod, error) {
+	ls := fmt.Sprintf("%s=%s", configDebugLabel, app_.Name)
+	if app_.RemoteConfig.GetNoModifyConfig() {
+		tmpl, err := a.getAppRelatedWorkloadTemplate(ctx, app_)
+		if err != nil {
+			return nil, err
+		}
+		ls = labels.SelectorFromSet(tmpl.Labels).String()
+	}
 	podList, err := a.kubeclient.CoreV1().Pods(app_.RemoteRuntime.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector: fmt.Sprintf("%s=%s", configDebugLabel, app_.Name),
+		LabelSelector: ls,
 	})
 	if err != nil {
 		return nil, err
@@ -255,7 +265,7 @@ func (a *appManagement) InitAppRemote(ctx context.Context, request *app.SingleAp
 		for i := range tmpl.Spec.Containers {
 			if tmpl.Spec.Containers[i].Name == app_.RemoteRuntime.ContainerName || app_.RemoteRuntime.ContainerName == "" {
 				tmpl.Spec.Containers[i].Command = []string{"/bin/sh"}
-				tmpl.Spec.Containers[i].Args = []string{"-c", "sleep 1000000000"}
+				tmpl.Spec.Containers[i].Args = []string{"-c", "touch /tmp/mirage-debug-output; tail -f /tmp/mirage-debug-output"}
 				if tmpl.Spec.Containers[i].SecurityContext != nil {
 					tmpl.Spec.Containers[i].SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(false)
 				}
@@ -283,15 +293,7 @@ func (a *appManagement) InitAppRemote(ctx context.Context, request *app.SingleAp
 		}
 		needUpdate = true
 	}
-	if needUpdate {
-		tmpl.Labels[configDebugLabel] = app_.Name
-		for i := range tmpl.Spec.Containers {
-			if tmpl.Spec.Containers[i].Name == app_.RemoteRuntime.ContainerName || app_.RemoteRuntime.ContainerName == "" {
-				tmpl.Spec.Containers[i].Command = []string{"/bin/sh"}
-				tmpl.Spec.Containers[i].Args = []string{"-c", "sleep 1000000000"}
-				break
-			}
-		}
+	if needUpdate && !app_.RemoteConfig.GetNoModifyConfig() {
 		if err := a.setAppRelatedWorkloadTemplate(ctx, app_, *tmpl); err != nil {
 			return nil, err
 		}
@@ -316,6 +318,7 @@ loop:
 					podName = pod.Name
 					break loop
 				} else {
+					log.Debugf("pod %s is not running", pod.Name)
 					lastErr = fmt.Errorf("pod %s is not running", pod.Name)
 				}
 			}
@@ -327,22 +330,8 @@ loop:
 		return nil, lastErr
 	}
 	// 2. installing debug tool in container.
-	switch app_.LocalConfig.DebugToolBuilder.Type {
-	case app.DebugToolType_LOCAL:
-		switch app_.ProgramType {
-		case app.ProgramType_GO:
-			p, err := godlv.InitOrLoadDLV(app_.RemoteRuntime.TargetArch, app_.LocalConfig.DebugToolBuilder.BuildCommands)
-			if err != nil {
-				return nil, err
-			}
-			err = kube.CopyLocalFileToPod(ctx, a.kubeconfig, app_.RemoteRuntime.Namespace, podName, app_.RemoteRuntime.ContainerName, p, path.Base(app_.RemoteConfig.DebugToolPath), path.Dir(app_.RemoteConfig.DebugToolPath))
-			if err != nil {
-				return nil, err
-			}
-		}
-	default:
-		// todo implement me
-		return nil, fmt.Errorf("not implemented")
+	if err := debug_tools.InstallPodDebugTool(ctx, app_, a.kubeconfig, podName); err != nil {
+		return nil, err
 	}
 	a.updateAndSave(app_)
 	// 3. port-forward the remote debugging port.
@@ -355,7 +344,8 @@ loop:
 			port:             app_.RemoteConfig.RemoteDebuggingPort,
 			podPortForwarder: pf,
 		}
-	} else if debugConifg.port != app_.RemoteConfig.RemoteDebuggingPort {
+	} else if debugConifg.port != app_.RemoteConfig.RemoteDebuggingPort ||
+		debugConifg.podPortForwarder.PodName() != podName {
 		debugConifg.podPortForwarder.Stop()
 		pf := kube.NewPodPortForwarder(a.kubeconfig, app_.RemoteRuntime.Namespace, podName, app_.RemoteConfig.RemoteDebuggingPort, app_.RemoteConfig.RemoteDebuggingPort)
 		if err := pf.Start(); err != nil {
@@ -387,26 +377,50 @@ func (a *appManagement) StartDebugging(ctx context.Context, request *app.SingleA
 	if err := kube.CopyLocalFileToPod(ctx, a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName, app_.LocalConfig.BuildOutput, "", app_.RemoteConfig.RemoteAppLocation); err != nil {
 		return nil, err
 	}
-	command := fmt.Sprintf("%s --listen=:%d --headless=true --api-version=2 --accept-multiclient --check-go-version=false exec -- %s %s",
-		app_.RemoteConfig.DebugToolPath,
-		app_.RemoteConfig.RemoteDebuggingPort,
-		path.Join(app_.RemoteConfig.RemoteAppLocation, path.Base(app_.LocalConfig.BuildOutput)),
-		app_.LocalConfig.AppArgs,
-	)
-	kube.ExecutePodCmd(ctx, a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName, "pkill -9 "+path.Base(app_.RemoteConfig.DebugToolPath), nil, false)
+	var langAdaptor langadaptors.LanguageAdaptor
+	switch app_.ProgramType {
+	case app.ProgramType_GO:
+		langAdaptor = golang.NewGolangAdaptor()
+	case app.ProgramType_RUST:
+		langAdaptor = rust.NewRustAdaptor()
+	default:
+		return nil, fmt.Errorf("unsupported program type %s", app_.ProgramType)
+	}
+	command, err := langAdaptor.DebugCommand(app_)
+	if err != nil {
+		return nil, err
+	}
+	kube.ExecutePodCmd(ctx, a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName,
+		fmt.Sprintf("pkill -9 %s; pkill -9 %s", path.Base(app_.RemoteConfig.DebugToolPath), path.Base(app_.LocalConfig.BuildOutput)),
+		nil)
 	go func() {
-		_, _, err = kube.ExecutePodCmd(context.Background(), a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName, command, nil, true)
+		_, _, err = kube.ExecutePodCmd(context.Background(), a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName, fmt.Sprintf("%s 2>&1 >>/tmp/mirage-debug-output", command), nil)
+		if err != nil {
+			log.Errorf("start debugging failed: %v", err)
+		}
 	}()
 	<-time.After(time.Second * 3)
 	return &app.Empty{}, err
 }
 
 func (a *appManagement) RollbackApp(ctx context.Context, request *app.SingleAppRequest) (*app.Status, error) {
-	// TODO implement me
-	panic("implement me")
-}
-
-func (a *appManagement) mustEmbedUnimplementedAppManagementServer() {
-	// TODO implement me
-	panic("implement me")
+	app_, ok := a.getApp(request.Name)
+	if !ok {
+		return nil, fmt.Errorf("app %s not found", request.Name)
+	}
+	if app_.GetRemoteConfig().GetInitialConfig() == "" {
+		return nil, fmt.Errorf("no initial config found")
+	}
+	target := corev1.PodTemplateSpec{}
+	_ = json.Unmarshal([]byte(app_.RemoteConfig.InitialConfig), &target)
+	if err := a.setAppRelatedWorkloadTemplate(ctx, app_, target); err != nil {
+		return nil, err
+	}
+	return &app.Status{
+		AppName:    app_.Name,
+		Configured: false,
+		Connected:  false,
+		Debugging:  false,
+		Error:      "",
+	}, nil
 }

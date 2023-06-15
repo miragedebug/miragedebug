@@ -11,6 +11,9 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 
 	"github.com/kebe7jun/miragedebug/api/app"
+	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
+	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/golang"
+	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/rust"
 	"github.com/kebe7jun/miragedebug/pkg/log"
 	"github.com/kebe7jun/miragedebug/pkg/shell"
 )
@@ -45,18 +48,31 @@ func debugCmd() *cobra.Command {
 }
 
 func buildBinary(app_ *app.App) error {
+	var langAdaptor langadaptors.LanguageAdaptor
+	switch app_.ProgramType {
+	case app.ProgramType_GO:
+		langAdaptor = golang.NewGolangAdaptor()
+	case app.ProgramType_RUST:
+		langAdaptor = rust.NewRustAdaptor()
+	default:
+		return fmt.Errorf("program type %s not supported", app_.ProgramType)
+	}
+	cmd, err := langAdaptor.BuildCommand(app_)
+	if err != nil {
+		return err
+	}
 	commands := []string{
 		fmt.Sprintf("cd %s", app_.LocalConfig.WorkingDir),
-	}
-	if app_.LocalConfig.CustomBuildCommand != "" {
-		commands = append(commands, app_.LocalConfig.CustomBuildCommand)
-	} else {
-		commands = append(commands, fmt.Sprintf("GOOS=linux GOARCH=%s go build -o %s %s", app.ToSystemArch(app_.RemoteRuntime.TargetArch), app_.LocalConfig.BuildOutput, app_.LocalConfig.AppEntryPath))
+		cmd,
 	}
 	log.Debugf("build command: %s", strings.Join(commands, "\n"))
 	out, errOut, err := shell.ExecuteCommands(context.Background(), commands)
-	fmt.Fprintf(os.Stdout, "%s\n", out)
-	fmt.Fprintf(os.Stderr, "%s\n", errOut)
+	if len(out) > 0 {
+		fmt.Fprintf(os.Stdout, "build out: %s\n", out)
+	}
+	if len(errOut) > 0 {
+		fmt.Fprintf(os.Stderr, "build error: %s\n", errOut)
+	}
 	if err != nil {
 		log.Errorf("build failed: %v", err)
 		return err

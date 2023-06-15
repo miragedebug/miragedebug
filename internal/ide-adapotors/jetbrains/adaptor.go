@@ -34,7 +34,7 @@ func (j *jetbrainsAdaptor) initPreloadScript(name string) error {
     <option name="INDEPENDENT_INTERPRETER_PATH" value="true" />
     <option name="INTERPRETER_PATH" value="/bin/sh" />
     <option name="INTERPRETER_OPTIONS" value="" />
-    <option name="EXECUTE_IN_TERMINAL" value="true" />
+    <option name="EXECUTE_IN_TERMINAL" value="false" />
     <option name="EXECUTE_SCRIPT_FILE" value="false" />
     <envs />
     <method v="2" />
@@ -50,11 +50,31 @@ func (j *jetbrainsAdaptor) initPreloadScript(name string) error {
 	return nil
 }
 
-func (j *jetbrainsAdaptor) initRunRemoteConfig(name string, port int32) error {
+func (j *jetbrainsAdaptor) initGolandRunRemoteConfig(name string, port int32) error {
 	runTmpl := `
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Remote debug %s" type="GoRemoteDebugConfigurationType" factoryName="Go Remote" port="%d">
     <option name="disconnectOption" value="STOP" />
+    <method v="2">
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="prepare-and-build-%s" run_configuration_type="ShConfigurationType" />
+    </method>
+  </configuration>
+</component>
+`
+	xml := fmt.Sprintf(runTmpl, name, port, name)
+	f := path.Join(".run", fmt.Sprintf("mirage-debug-remote-debug-%s.run.xml", name))
+	os.MkdirAll(path.Dir(f), 0755)
+	if err := os.WriteFile(f, []byte(xml), 0644); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (j *jetbrainsAdaptor) initCLionRunRemoteConfig(name string, port int32) error {
+	runTmpl := `
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Remote debug %s" type="CLion_Remote" version="1" remoteCommand="127.0.0.1:%d" symbolFile="" sysroot="">
+    <debugger kind="GDB" isBundled="true" />
     <method v="2">
       <option name="RunConfigurationTask" enabled="true" run_configuration_name="prepare-and-build-%s" run_configuration_type="ShConfigurationType" />
     </method>
@@ -78,8 +98,17 @@ func (j *jetbrainsAdaptor) PrepareLaunch(a *app.App) error {
 	if err := j.initPreloadScript(a.Name); err != nil {
 		return err
 	}
-	if err := j.initRunRemoteConfig(a.Name, a.RemoteConfig.RemoteDebuggingPort); err != nil {
-		return err
+	switch a.LocalConfig.IdeType {
+	case app.IDEType_GOLAND:
+		if err := j.initGolandRunRemoteConfig(a.Name, a.RemoteConfig.RemoteDebuggingPort); err != nil {
+			return err
+		}
+	case app.IDEType_CLION:
+		if err := j.initCLionRunRemoteConfig(a.Name, a.RemoteConfig.RemoteDebuggingPort); err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("unsupported ide type: %s", a.LocalConfig.IdeType)
 	}
 	return nil
 }

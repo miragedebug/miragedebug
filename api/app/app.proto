@@ -77,12 +77,16 @@ message RemoteConfig {
     // InitialConfig is the initial config of the workload spec.
     // This is used to restore the original config after debugging.
     string initialConfig = 5;
+    // NoModifyConfig indicates whether to modify the config of the workload.
+    // If true, we will not modify the config of the workload.
+    bool noModifyConfig = 6;
 }
 
 enum IDEType {
     IDE_TYPE_UNSPECIFIED = 0;
     VS_CODE              = 1;
     GOLAND               = 2;
+    CLION                = 3;
 }
 
 message LocalConfig {
@@ -95,7 +99,7 @@ message LocalConfig {
     // Such as /Users/kebeliu/workspace/miragedebug
     string workingDir = 3;
     // AppEntryPath is the entry path of the application in local.
-    // Such as cmd/main.go or cmd/
+    // Such as ./cmd/main.go or ./cmd/
     string appEntryPath = 4;
     // AppArgs is the running args of the application.
     // Such as "--config=config.yaml --debug",
@@ -114,8 +118,7 @@ message LocalConfig {
 enum ProgramType {
     PROGRAM_TYPE_UNSPECIFIED = 0;
     GO                       = 1;
-    JAVA                     = 2;
-    PYTHON                   = 3;
+    RUST                     = 2;
 }
 
 message App {

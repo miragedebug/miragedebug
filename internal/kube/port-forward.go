@@ -43,11 +43,14 @@ func NewPodPortForwarder(restConfig *rest.Config, namespace string, podName stri
 	}
 }
 
+func (p *PodPortForwarder) PodName() string {
+	return p.podName
+}
+
 func (p *PodPortForwarder) Start() error {
 	if p.started {
 		return nil
 	}
-	ready := make(chan struct{})
 	go func() {
 		for {
 			select {
@@ -59,37 +62,37 @@ func (p *PodPortForwarder) Start() error {
 				return
 			default:
 				stop := make(chan struct{}, 1)
-				pf, err := newPortForward(context.Background(), p.restConfig, p.namespace, p.podName, p.localPort, p.remotePort, stop, ready)
+				readyCh := make(chan struct{}, 1)
+				pf, err := newPortForward(context.Background(), p.restConfig, p.namespace, p.podName, p.localPort, p.remotePort, stop, readyCh)
 				if err != nil {
 					fmt.Printf("failed to create port-forward: %v\n", err)
-					return
+					<-time.After(time.Second * 5)
+					continue
 				}
 				p.pf = pf
 				p.started = true
 				log.Debugf("forward port %d to %s/%s port %d starting", p.localPort, p.namespace, p.podName, p.remotePort)
-				err = func() (err error) {
-					defer func() {
-						e := recover()
-						if e != nil {
-							err = fmt.Errorf("port-forward panic: %v", e)
-						}
-					}()
-					return p.pf.ForwardPorts()
+				result := make(chan error)
+				go func() {
+					err := p.pf.ForwardPorts()
+					result <- err
 				}()
-				if err != nil {
-					fmt.Printf("port-forward error: %v\n", err)
+				select {
+				case err := <-result:
+					if err != nil {
+						fmt.Printf("failed to forward port: %v\n", err)
+					}
+					p.started = false
+					<-time.After(time.Second * 3)
+					continue
+				case <-p.stopCh:
+					close(stop)
+					p.started = false
+					return
 				}
-				p.started = false
-				<-time.After(time.Second * 5)
 			}
 		}
 	}()
-	select {
-	case <-ready:
-		p.started = true
-	case <-time.After(time.Second * 10):
-		return fmt.Errorf("timeout waiting for port-forward to start")
-	}
 	return nil
 }
 
