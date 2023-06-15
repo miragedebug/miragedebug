@@ -54,5 +54,13 @@ func InstallPodDebugTool(ctx context.Context, app_ *app.App, config *rest.Config
 	if err != nil {
 		return err
 	}
+	kube.ExecutePodCmd(ctx,
+		config,
+		app_.RemoteRuntime.Namespace,
+		podName,
+		app_.RemoteRuntime.ContainerName,
+		fmt.Sprintf("chmod +x %s", app_.RemoteConfig.DebugToolPath),
+		nil,
+	)
 	return nil
 }
