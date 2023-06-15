@@ -6,13 +6,10 @@ import (
 	"path"
 
 	"github.com/miragedebug/miragedebug/api/app"
-	"github.com/miragedebug/miragedebug/config"
 	ideadapotors "github.com/miragedebug/miragedebug/internal/ide-adapotors"
 )
 
-const (
-	preloadScriptName = "mirage-debug-preload"
-)
+const prepareScriptName = "Mirage - Prepare"
 
 type jetbrainsAdaptor struct {
 }
@@ -22,9 +19,14 @@ func NewJetbrainsAdaptor() ideadapotors.IDEAdaptor {
 }
 
 func (j *jetbrainsAdaptor) initPreloadScript(name string) error {
+	exe, err := os.Executable()
+	if err != nil {
+		return err
+	}
+	configName := fmt.Sprintf("%s %s", prepareScriptName, name)
 	runTmpl := `
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="prepare-and-build-%s" type="ShConfigurationType">
+  <configuration default="false" name="%s" type="ShConfigurationType">
     <option name="SCRIPT_TEXT" value="%s debug %s" />
     <option name="INDEPENDENT_SCRIPT_PATH" value="true" />
     <option name="SCRIPT_PATH" value="" /> 
@@ -41,8 +43,8 @@ func (j *jetbrainsAdaptor) initPreloadScript(name string) error {
   </configuration>
 </component>
 `
-	xml := fmt.Sprintf(runTmpl, name, path.Join(config.GetConfigRootPath(), "bin", "mirage-debug"), name)
-	f := path.Join(".run", fmt.Sprintf("mirage-debug-%s.run.xml", name))
+	xml := fmt.Sprintf(runTmpl, configName, exe, name)
+	f := path.Join(".run", fmt.Sprintf("%s.run.xml", configName))
 	os.MkdirAll(path.Dir(f), 0755)
 	if err := os.WriteFile(f, []byte(xml), 0644); err != nil {
 		return err
@@ -51,18 +53,19 @@ func (j *jetbrainsAdaptor) initPreloadScript(name string) error {
 }
 
 func (j *jetbrainsAdaptor) initGolandRunRemoteConfig(name string, port int32) error {
+	configName := fmt.Sprintf("Mirage - Remote Debug %s", name)
 	runTmpl := `
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Remote debug %s" type="GoRemoteDebugConfigurationType" factoryName="Go Remote" port="%d">
+  <configuration default="false" name="%s" type="GoRemoteDebugConfigurationType" factoryName="Go Remote" port="%d">
     <option name="disconnectOption" value="STOP" />
     <method v="2">
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="prepare-and-build-%s" run_configuration_type="ShConfigurationType" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="%s" run_configuration_type="ShConfigurationType" />
     </method>
   </configuration>
 </component>
 `
-	xml := fmt.Sprintf(runTmpl, name, port, name)
-	f := path.Join(".run", fmt.Sprintf("mirage-debug-remote-debug-%s.run.xml", name))
+	xml := fmt.Sprintf(runTmpl, configName, port, fmt.Sprintf("%s %s", prepareScriptName, name))
+	f := path.Join(".run", fmt.Sprintf("%s.run.xml", configName))
 	os.MkdirAll(path.Dir(f), 0755)
 	if err := os.WriteFile(f, []byte(xml), 0644); err != nil {
 		return err
@@ -71,18 +74,19 @@ func (j *jetbrainsAdaptor) initGolandRunRemoteConfig(name string, port int32) er
 }
 
 func (j *jetbrainsAdaptor) initCLionRunRemoteConfig(name string, port int32) error {
+	configName := fmt.Sprintf("Mirage - Remote Debug %s", name)
 	runTmpl := `
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Remote debug %s" type="CLion_Remote" version="1" remoteCommand="127.0.0.1:%d" symbolFile="" sysroot="">
+  <configuration default="false" name="%s" type="CLion_Remote" version="1" remoteCommand="127.0.0.1:%d" symbolFile="" sysroot="">
     <debugger kind="GDB" isBundled="true" />
     <method v="2">
-      <option name="RunConfigurationTask" enabled="true" run_configuration_name="prepare-and-build-%s" run_configuration_type="ShConfigurationType" />
+      <option name="RunConfigurationTask" enabled="true" run_configuration_name="%s" run_configuration_type="ShConfigurationType" />
     </method>
   </configuration>
 </component>
 `
-	xml := fmt.Sprintf(runTmpl, name, port, name)
-	f := path.Join(".run", fmt.Sprintf("mirage-debug-remote-debug-%s.run.xml", name))
+	xml := fmt.Sprintf(runTmpl, configName, port, fmt.Sprintf("%s %s", prepareScriptName, name))
+	f := path.Join(".run", fmt.Sprintf("%s.run.xml", configName))
 	os.MkdirAll(path.Dir(f), 0755)
 	if err := os.WriteFile(f, []byte(xml), 0644); err != nil {
 		return err

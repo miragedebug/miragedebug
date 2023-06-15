@@ -10,7 +10,6 @@ import (
 	"muzzammil.xyz/jsonc"
 
 	"github.com/miragedebug/miragedebug/api/app"
-	"github.com/miragedebug/miragedebug/config"
 	ideadapotors "github.com/miragedebug/miragedebug/internal/ide-adapotors"
 )
 
@@ -32,10 +31,14 @@ type launchConfig struct {
 }
 
 func (j *vscodeAdaptor) initPreloadScript(name string) ([]byte, error) {
+	exe, err := os.Executable()
+	if err != nil {
+		return nil, err
+	}
 	prepareTask := map[string]interface{}{
 		"type":    "shell",
 		"label":   fmt.Sprintf("prepare-and-build-%s", name),
-		"command": path.Join(config.GetConfigRootPath(), "bin", "mirage-debug"),
+		"command": exe,
 		"args": []string{
 			"debug",
 			name,

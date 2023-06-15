@@ -8,5 +8,5 @@ gen: format-proto
 
 .PHONY: gen
 
-build: gen
-	go build -o .mirage/bin/mirage-debug ./cmd
+install: gen
+	go install ./cmd/mirage-debug
