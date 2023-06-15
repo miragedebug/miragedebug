@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/samber/lo"
@@ -104,11 +105,13 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 	if err != nil {
 		return err
 	}
+	workloadArgsMap := map[string][]string{}
 	promptWorkload := &survey.Select{
 		Message: "Please choose an workload:",
 		Options: func() []string {
 			depList, _ := kubeClient.AppsV1().Deployments(answers.Namespace).List(context.Background(), metav1.ListOptions{})
 			return lo.Map(depList.Items, func(item appsv1.Deployment, index int) string {
+				workloadArgsMap[item.Name] = item.Spec.Template.Spec.Containers[0].Args
 				return item.Name
 			})
 		}(),
@@ -143,9 +146,9 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 				Default: func() string {
 					switch answers.Language {
 					case app.ProgramType_GO.String():
-						return "go build -o ./bin/main ./"
+						return "GOOS=linux GOARCH=amd64 go build -o ./bin/main ./"
 					case app.ProgramType_RUST.String():
-						return "cargo build"
+						return "cargo build --target x86_64-unknown-linux-gnu"
 					default:
 						return ""
 					}
@@ -170,6 +173,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 			Name: "runArgs",
 			Prompt: &survey.Input{
 				Message: "App running args(eg. --port 8080:",
+				Default: strings.Join(workloadArgsMap[workload], " "),
 			},
 		},
 	}

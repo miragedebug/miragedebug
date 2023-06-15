@@ -261,6 +261,7 @@ func (a *appManagement) InitAppRemote(ctx context.Context, request *app.SingleAp
 				if tmpl.Spec.Containers[i].SecurityContext != nil {
 					tmpl.Spec.Containers[i].SecurityContext.ReadOnlyRootFilesystem = pointer.Bool(false)
 				}
+				tmpl.Spec.Containers[i].ReadinessProbe = nil
 				break
 			}
 		}
@@ -289,6 +290,9 @@ func (a *appManagement) InitAppRemote(ctx context.Context, request *app.SingleAp
 		if err := a.setAppRelatedWorkloadTemplate(ctx, app_, *tmpl); err != nil {
 			return nil, err
 		}
+	}
+	if app_.RemoteRuntime.ContainerName == "" {
+		app_.RemoteRuntime.ContainerName = tmpl.Spec.Containers[0].Name
 	}
 	timer := time.NewTimer(time.Second * 3)
 	defer timer.Stop()
