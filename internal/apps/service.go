@@ -194,8 +194,6 @@ func (a *appManagement) CreateApp(ctx context.Context, app_ *app.App) (*app.App,
 	if app_.RemoteRuntime.TargetArch == app.ArchType_ARCH_TYPE_UNSPECIFIED {
 		app_.RemoteRuntime.TargetArch = app.ArchType_AMD64
 	}
-	// clean some fields
-	app_.LocalConfig = nil
 	if err := a.save(app_); err != nil {
 		return nil, err
 	}

@@ -59,6 +59,12 @@ func initLocalConfig(client app.AppManagementClient, appName string) error {
 	if err != nil {
 		return err
 	}
+	app_, err = client.GetApp(context.Background(), &app.SingleAppRequest{
+		Name: appName,
+	})
+	if err != nil {
+		return err
+	}
 	switch app_.LocalConfig.IdeType {
 	case app.IDEType_GOLAND, app.IDEType_CLION:
 		j := jetbrains.NewJetbrainsAdaptor()
