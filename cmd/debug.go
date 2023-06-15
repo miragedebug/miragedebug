@@ -10,12 +10,12 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
-	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/golang"
-	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/rust"
-	"github.com/kebe7jun/miragedebug/pkg/log"
-	"github.com/kebe7jun/miragedebug/pkg/shell"
+	"github.com/miragedebug/miragedebug/api/app"
+	langadaptors "github.com/miragedebug/miragedebug/internal/lang-adaptors"
+	"github.com/miragedebug/miragedebug/internal/lang-adaptors/golang"
+	"github.com/miragedebug/miragedebug/internal/lang-adaptors/rust"
+	"github.com/miragedebug/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/pkg/shell"
 )
 
 func debugCmd() *cobra.Command {

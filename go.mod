@@ -1,4 +1,4 @@
-module github.com/kebe7jun/miragedebug
+module github.com/miragedebug/miragedebug
 
 go 1.20
 

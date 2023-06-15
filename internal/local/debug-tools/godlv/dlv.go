@@ -7,10 +7,10 @@ import (
 	"path"
 	"time"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	"github.com/kebe7jun/miragedebug/config"
-	"github.com/kebe7jun/miragedebug/pkg/log"
-	"github.com/kebe7jun/miragedebug/pkg/shell"
+	"github.com/miragedebug/miragedebug/api/app"
+	"github.com/miragedebug/miragedebug/config"
+	"github.com/miragedebug/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/pkg/shell"
 )
 
 const (

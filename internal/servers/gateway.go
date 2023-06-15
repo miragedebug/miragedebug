@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 type GatewayServer struct {

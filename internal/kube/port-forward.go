@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 type PodPortForwarder struct {

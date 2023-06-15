@@ -3,10 +3,10 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/kebe7jun/miragedebug/config"
-	"github.com/kebe7jun/miragedebug/internal/apps"
-	"github.com/kebe7jun/miragedebug/internal/servers"
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/config"
+	"github.com/miragedebug/miragedebug/internal/apps"
+	"github.com/miragedebug/miragedebug/internal/servers"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 func serverCmd() *cobra.Command {

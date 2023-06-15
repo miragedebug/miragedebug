@@ -21,14 +21,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	"github.com/kebe7jun/miragedebug/config"
-	"github.com/kebe7jun/miragedebug/internal/kube"
-	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
-	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/golang"
-	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/rust"
-	debug_tools "github.com/kebe7jun/miragedebug/internal/local/debug-tools"
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/api/app"
+	"github.com/miragedebug/miragedebug/config"
+	"github.com/miragedebug/miragedebug/internal/kube"
+	langadaptors "github.com/miragedebug/miragedebug/internal/lang-adaptors"
+	"github.com/miragedebug/miragedebug/internal/lang-adaptors/golang"
+	"github.com/miragedebug/miragedebug/internal/lang-adaptors/rust"
+	debug_tools "github.com/miragedebug/miragedebug/internal/local/debug-tools"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 const appsJsonFileName = "apps.json"

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"path"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
-	debugtools "github.com/kebe7jun/miragedebug/internal/local/debug-tools/godlv"
+	"github.com/miragedebug/miragedebug/api/app"
+	langadaptors "github.com/miragedebug/miragedebug/internal/lang-adaptors"
+	debugtools "github.com/miragedebug/miragedebug/internal/local/debug-tools/godlv"
 )
 
 type golang struct{}

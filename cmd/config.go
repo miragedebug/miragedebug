@@ -8,10 +8,10 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	"github.com/kebe7jun/miragedebug/internal/ide-adapotors/jetbrains"
-	"github.com/kebe7jun/miragedebug/internal/ide-adapotors/vscode"
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/api/app"
+	"github.com/miragedebug/miragedebug/internal/ide-adapotors/jetbrains"
+	"github.com/miragedebug/miragedebug/internal/ide-adapotors/vscode"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 func configCmd() *cobra.Command {

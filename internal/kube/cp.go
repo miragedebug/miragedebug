@@ -11,7 +11,7 @@ import (
 
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 func makeTar(srcPath string, rename string, writer io.Writer) error {

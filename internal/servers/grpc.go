@@ -5,7 +5,7 @@ import (
 
 	"google.golang.org/grpc"
 
-	"github.com/kebe7jun/miragedebug/internal/servers/route"
+	"github.com/miragedebug/miragedebug/internal/servers/route"
 )
 
 type GrpcServer struct {

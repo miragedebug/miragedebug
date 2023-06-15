@@ -5,9 +5,9 @@ import (
 	"os"
 	"path"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	"github.com/kebe7jun/miragedebug/config"
-	ideadapotors "github.com/kebe7jun/miragedebug/internal/ide-adapotors"
+	"github.com/miragedebug/miragedebug/api/app"
+	"github.com/miragedebug/miragedebug/config"
+	ideadapotors "github.com/miragedebug/miragedebug/internal/ide-adapotors"
 )
 
 const (

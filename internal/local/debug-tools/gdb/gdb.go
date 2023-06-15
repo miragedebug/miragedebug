@@ -3,8 +3,8 @@ package gdb
 import (
 	"path"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	"github.com/kebe7jun/miragedebug/config"
+	"github.com/miragedebug/miragedebug/api/app"
+	"github.com/miragedebug/miragedebug/config"
 )
 
 const gdbVersion = "v13.2"

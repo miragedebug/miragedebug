@@ -6,9 +6,9 @@ import (
 
 	restclient "k8s.io/client-go/rest"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
-	"github.com/kebe7jun/miragedebug/internal/local/debug-tools/gdb"
+	"github.com/miragedebug/miragedebug/api/app"
+	langadaptors "github.com/miragedebug/miragedebug/internal/lang-adaptors"
+	"github.com/miragedebug/miragedebug/internal/local/debug-tools/gdb"
 )
 
 type rust struct {

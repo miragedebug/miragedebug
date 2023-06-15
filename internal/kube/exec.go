@@ -12,7 +12,7 @@ import (
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 
-	"github.com/kebe7jun/miragedebug/pkg/log"
+	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 func ExecutePodCmd(ctx context.Context, config *restclient.Config, namespace string, podName string, container string, command string, stdin io.Reader) ([]byte, []byte, error) {

@@ -1,6 +1,6 @@
 package langadaptors
 
-import "github.com/kebe7jun/miragedebug/api/app"
+import "github.com/miragedebug/miragedebug/api/app"
 
 type RemotePodShellExecutor func(commands []string) ([]byte, []byte, error)
 

@@ -8,11 +8,11 @@ import (
 
 	"k8s.io/client-go/rest"
 
-	"github.com/kebe7jun/miragedebug/api/app"
-	"github.com/kebe7jun/miragedebug/internal/kube"
-	langadaptors "github.com/kebe7jun/miragedebug/internal/lang-adaptors"
-	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/golang"
-	"github.com/kebe7jun/miragedebug/internal/lang-adaptors/rust"
+	"github.com/miragedebug/miragedebug/api/app"
+	"github.com/miragedebug/miragedebug/internal/kube"
+	langadaptors "github.com/miragedebug/miragedebug/internal/lang-adaptors"
+	"github.com/miragedebug/miragedebug/internal/lang-adaptors/golang"
+	"github.com/miragedebug/miragedebug/internal/lang-adaptors/rust"
 )
 
 func InstallPodDebugTool(ctx context.Context, app_ *app.App, config *rest.Config, podName string) error {
