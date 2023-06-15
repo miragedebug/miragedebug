@@ -6,7 +6,6 @@ import (
 	"github.com/miragedebug/miragedebug/config"
 	"github.com/miragedebug/miragedebug/internal/apps"
 	"github.com/miragedebug/miragedebug/internal/servers"
-	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
 func serverCmd() *cobra.Command {
@@ -19,7 +18,6 @@ func serverCmd() *cobra.Command {
 			return nil
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.SetDebug()
 			config.SetKubeconfig(kubeconfig)
 			grpcServer := servers.NewGRPCServer(grpcAddr, apps.RegisterGRPCRoutes)
 			go grpcServer.Run()

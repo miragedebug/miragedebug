@@ -8,10 +8,10 @@ import (
 	"path"
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
-	"github.com/samber/lo"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -20,6 +20,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/utils/pointer"
+	"sigs.k8s.io/yaml"
 
 	"github.com/miragedebug/miragedebug/api/app"
 	"github.com/miragedebug/miragedebug/config"
@@ -31,8 +32,34 @@ import (
 	"github.com/miragedebug/miragedebug/pkg/log"
 )
 
-const appsJsonFileName = "apps.json"
 const configDebugLabel = "miragedebug.io/debug"
+const appFileSuffix = ".yaml"
+
+func appsDir() string {
+	return path.Join(config.GetConfigRootPath(), "apps")
+}
+
+func appFile(name string) string {
+	return path.Join(appsDir(), name+appFileSuffix)
+}
+
+func readAppFromFile(f string) (*app.App, error) {
+	bs, err := os.ReadFile(f)
+	if err != nil {
+		return nil, err
+	}
+	a := app.App{}
+	err = yaml.Unmarshal(bs, &a)
+	if err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
+func readApp(name string) (*app.App, error) {
+	f := appFile(name)
+	return readAppFromFile(f)
+}
 
 type appDebugConfig struct {
 	port             int32
@@ -41,7 +68,6 @@ type appDebugConfig struct {
 
 type appManagement struct {
 	app.UnimplementedAppManagementServer
-	apps           []*app.App
 	inited         bool
 	rwlock         sync.RWMutex
 	kubeconfig     *rest.Config
@@ -55,19 +81,7 @@ func (a *appManagement) init() {
 	if a.inited {
 		return
 	}
-	os.MkdirAll(config.GetConfigRootPath(), 0755)
-	bs, err := os.ReadFile(path.Join(config.GetConfigRootPath(), appsJsonFileName))
-	if err != nil {
-		bs = []byte("[]")
-		if err = os.WriteFile(path.Join(config.GetConfigRootPath(), appsJsonFileName), bs, 0644); err != nil {
-			panic(err)
-		}
-	}
-	apps := make([]*app.App, 0)
-	if err = json.Unmarshal(bs, &apps); err != nil {
-		panic(err)
-	}
-	a.apps = apps
+	os.MkdirAll(appsDir(), 0755)
 	a.inited = true
 	a.debugConfigMap = make(map[string]appDebugConfig)
 	cfg, err := clientcmd.BuildConfigFromFlags("", config.GetKubeconfig())
@@ -78,47 +92,12 @@ func (a *appManagement) init() {
 	a.kubeclient = kubernetes.NewForConfigOrDie(cfg)
 }
 
-func (a *appManagement) addAndSave(app *app.App) error {
-	as := append(a.apps, app)
-	if err := a.save(as); err != nil {
-		return err
-	}
-	a.rwlock.Lock()
-	defer a.rwlock.Unlock()
-	a.apps = as
-	return nil
-}
-
-func (a *appManagement) updateAndSave(app_ *app.App) error {
-	a.rwlock.Lock()
-	lo.ForEach(a.apps, func(v *app.App, i int) {
-		if v.Name == app_.Name {
-			a.apps[i] = app_
-		}
-	})
-	a.rwlock.Unlock()
-	if err := a.save(a.apps); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (a *appManagement) save(apps []*app.App) error {
-	bs, err := json.MarshalIndent(apps, "", "  ")
+func (a *appManagement) save(app_ *app.App) error {
+	bs, err := yaml.Marshal(app_)
 	if err != nil {
 		return err
 	}
-	a.rwlock.RLock()
-	a.apps = apps
-	defer a.rwlock.RUnlock()
-	return os.WriteFile(path.Join(config.GetConfigRootPath(), appsJsonFileName), bs, 0644)
-}
-
-func (a *appManagement) saveSelf() error {
-	a.rwlock.RLock()
-	apps := a.apps
-	a.rwlock.RUnlock()
-	return a.save(apps)
+	return os.WriteFile(appFile(app_.Name), bs, 0755)
 }
 
 func (a *appManagement) getAppRelatedWorkloadTemplate(ctx context.Context, app_ *app.App) (*corev1.PodTemplateSpec, error) {
@@ -172,17 +151,32 @@ func (a *appManagement) setAppRelatedWorkloadTemplate(ctx context.Context, app_ 
 }
 
 func (a *appManagement) getApp(name string) (*app.App, bool) {
-	a.rwlock.RLock()
-	defer a.rwlock.RUnlock()
-	return lo.Find(a.apps, func(item *app.App) bool {
-		return item.Name == name
-	})
+	app_, err := readApp(name)
+	if err != nil {
+		log.Errorf("read app %s error: %v", name, err)
+	}
+	return app_, err == nil
 }
 
 func (a *appManagement) ListApps(ctx context.Context, empty *app.Empty) (*app.AppList, error) {
-	a.rwlock.RLock()
-	defer a.rwlock.RUnlock()
-	return &app.AppList{Apps: a.apps}, nil
+	entries, err := os.ReadDir(appsDir())
+	if err != nil {
+		return nil, err
+	}
+	appList := &app.AppList{}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(e.Name(), appFileSuffix) {
+			continue
+		}
+		f := path.Join(appsDir(), e.Name())
+		app_, err := readAppFromFile(f)
+		if err != nil {
+			log.Errorf("read app from %s error: %v", f, err)
+			continue
+		}
+		appList.Apps = append(appList.Apps, app_)
+	}
+	return appList, nil
 }
 
 func (a *appManagement) CreateApp(ctx context.Context, app_ *app.App) (*app.App, error) {
@@ -202,7 +196,7 @@ func (a *appManagement) CreateApp(ctx context.Context, app_ *app.App) (*app.App,
 	}
 	// clean some fields
 	app_.LocalConfig = nil
-	if err := a.addAndSave(app_); err != nil {
+	if err := a.save(app_); err != nil {
 		return nil, err
 	}
 	return app_, nil
@@ -288,7 +282,7 @@ func (a *appManagement) InitAppRemote(ctx context.Context, request *app.SingleAp
 		}
 		calcTarget(tmpl)
 		app_.RemoteConfig.InitialConfig = string(bs)
-		if err := a.saveSelf(); err != nil {
+		if err := a.save(app_); err != nil {
 			return nil, err
 		}
 		needUpdate = true
@@ -333,7 +327,7 @@ loop:
 	if err := debug_tools.InstallPodDebugTool(ctx, app_, a.kubeconfig, podName); err != nil {
 		return nil, err
 	}
-	a.updateAndSave(app_)
+	a.save(app_)
 	// 3. port-forward the remote debugging port.
 	if debugConifg, ok := a.debugConfigMap[app_.Name]; !ok {
 		pf := kube.NewPodPortForwarder(a.kubeconfig, app_.RemoteRuntime.Namespace, podName, app_.RemoteConfig.RemoteDebuggingPort, app_.RemoteConfig.RemoteDebuggingPort)

@@ -24,7 +24,6 @@ func debugCmd() *cobra.Command {
 		Use:   "debug",
 		Short: "start debug",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			log.SetDebug()
 			if len(args) != 1 {
 				log.Fatalf("please specify the project name")
 				return nil

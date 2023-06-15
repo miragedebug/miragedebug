@@ -6,12 +6,12 @@ import (
 	"strings"
 )
 
-var configRootPath = "/Users/kebeliu/workspace/miragedebug/.mirage"
+var configRootPath = "~/.mirage"
 
 func absPath(path string) string {
 	if strings.HasPrefix(path, "~") {
 		h, _ := os.UserHomeDir()
-		return filepath.Join(h, configRootPath[2:])
+		return filepath.Join(h, path[2:])
 	}
 	return path
 }
