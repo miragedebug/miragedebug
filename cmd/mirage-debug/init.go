@@ -386,6 +386,6 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 	if err != nil {
 		return err
 	}
-	log.Infof("create app %s success: %v", a.Name, a)
+	fmt.Printf("create app %s success\n Run `%s config %s` in %s to config your IDE!\n", a.Name, os.Args[0], a.Name, answers.Workdir)
 	return err
 }
