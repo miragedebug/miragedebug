@@ -68,7 +68,7 @@ func CopyLocalFileToPod(ctx context.Context, config *restclient.Config, namespac
 	if err != nil {
 		return err
 	}
-	out, errOut, err := ExecutePodCmd(ctx, config, namespace, podName, container, "tar -xf - -C "+remotePath, buf)
+	out, errOut, err := ExecutePodCmd(ctx, config, namespace, podName, container, "tar --no-same-owner -xf - -C "+remotePath, buf)
 	log.Debugf("copy file %s to %s/%s out: %s, errOut: %s, err: %v", localFile, namespace, podName, out, errOut, err)
 	if err != nil {
 		return err

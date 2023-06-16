@@ -25,8 +25,8 @@ func serverCmd() *cobra.Command {
 			return gwServer.Run()
 		},
 	}
-	root.PersistentFlags().StringVarP(&httpAddr, "http-addr", "", ":38080", "HTTP listen address.")
-	root.PersistentFlags().StringVarP(&grpcAddr, "grpc-addr", "", ":38081", "GRPC listen address.")
+	root.PersistentFlags().StringVarP(&httpAddr, "http-addr", "", "127.0.0.1:38080", "HTTP listen address.")
+	root.PersistentFlags().StringVarP(&grpcAddr, "grpc-addr", "", "127.0.0.1:38081", "GRPC listen address.")
 	root.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "~/.kube/config", "Kubeconfig file path.")
 	return root
 }

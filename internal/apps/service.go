@@ -384,7 +384,11 @@ func (a *appManagement) StartDebugging(ctx context.Context, request *app.SingleA
 	if err != nil {
 		return nil, err
 	}
-	if err := kube.CopyLocalFileToPod(ctx, a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName, app_.LocalConfig.BuildOutput, "", app_.RemoteConfig.RemoteAppLocation); err != nil {
+	binaryFile := app_.LocalConfig.BuildOutput
+	if !strings.HasPrefix(binaryFile, "/") {
+		binaryFile = path.Join(app_.LocalConfig.WorkingDir, app_.LocalConfig.BuildOutput)
+	}
+	if err := kube.CopyLocalFileToPod(ctx, a.kubeconfig, app_.RemoteRuntime.Namespace, pod.Name, app_.RemoteRuntime.ContainerName, binaryFile, "", app_.RemoteConfig.RemoteAppLocation); err != nil {
 		return nil, err
 	}
 	var langAdaptor langadaptors.LanguageAdaptor
