@@ -32,6 +32,7 @@ func debugCmd() *cobra.Command {
 			conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
+				return nil
 			}
 			defer conn.Close()
 			c := app.NewAppManagementClient(conn)

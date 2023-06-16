@@ -214,6 +214,25 @@ func (a *appManagement) CreateApp(ctx context.Context, app_ *app.App) (*app.App,
 	return app_, nil
 }
 
+func (a *appManagement) UpdateApp(ctx context.Context, request *app.App) (*app.App, error) {
+	_, ok := a.getApp(request.Name)
+	if !ok {
+		return nil, fmt.Errorf("app %s not found", request.Name)
+	}
+	return request, a.save(request)
+}
+
+func (a *appManagement) DeleteApp(ctx context.Context, request *app.SingleAppRequest) (*app.App, error) {
+	app_, ok := a.getApp(request.Name)
+	if !ok {
+		return nil, fmt.Errorf("app %s not found", request.Name)
+	}
+	if err := os.Remove(appFile(request.Name)); err != nil {
+		return nil, err
+	}
+	return app_, nil
+}
+
 func (a *appManagement) GetApp(ctx context.Context, request *app.SingleAppRequest) (*app.App, error) {
 	app, ok := a.getApp(request.Name)
 	if !ok {

@@ -24,6 +24,8 @@ const _ = grpc.SupportPackageIsVersion7
 type AppManagementClient interface {
 	ListApps(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AppList, error)
 	CreateApp(ctx context.Context, in *App, opts ...grpc.CallOption) (*App, error)
+	UpdateApp(ctx context.Context, in *App, opts ...grpc.CallOption) (*App, error)
+	DeleteApp(ctx context.Context, in *SingleAppRequest, opts ...grpc.CallOption) (*App, error)
 	GetApp(ctx context.Context, in *SingleAppRequest, opts ...grpc.CallOption) (*App, error)
 	GetAppStatus(ctx context.Context, in *SingleAppRequest, opts ...grpc.CallOption) (*Status, error)
 	// InitAppRemote will do the following things:
@@ -61,6 +63,24 @@ func (c *appManagementClient) ListApps(ctx context.Context, in *Empty, opts ...g
 func (c *appManagementClient) CreateApp(ctx context.Context, in *App, opts ...grpc.CallOption) (*App, error) {
 	out := new(App)
 	err := c.cc.Invoke(ctx, "/miragedebug.api.app.AppManagement/CreateApp", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appManagementClient) UpdateApp(ctx context.Context, in *App, opts ...grpc.CallOption) (*App, error) {
+	out := new(App)
+	err := c.cc.Invoke(ctx, "/miragedebug.api.app.AppManagement/UpdateApp", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *appManagementClient) DeleteApp(ctx context.Context, in *SingleAppRequest, opts ...grpc.CallOption) (*App, error) {
+	out := new(App)
+	err := c.cc.Invoke(ctx, "/miragedebug.api.app.AppManagement/DeleteApp", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -118,6 +138,8 @@ func (c *appManagementClient) RollbackApp(ctx context.Context, in *SingleAppRequ
 type AppManagementServer interface {
 	ListApps(context.Context, *Empty) (*AppList, error)
 	CreateApp(context.Context, *App) (*App, error)
+	UpdateApp(context.Context, *App) (*App, error)
+	DeleteApp(context.Context, *SingleAppRequest) (*App, error)
 	GetApp(context.Context, *SingleAppRequest) (*App, error)
 	GetAppStatus(context.Context, *SingleAppRequest) (*Status, error)
 	// InitAppRemote will do the following things:
@@ -145,6 +167,12 @@ func (UnimplementedAppManagementServer) ListApps(context.Context, *Empty) (*AppL
 }
 func (UnimplementedAppManagementServer) CreateApp(context.Context, *App) (*App, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateApp not implemented")
+}
+func (UnimplementedAppManagementServer) UpdateApp(context.Context, *App) (*App, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateApp not implemented")
+}
+func (UnimplementedAppManagementServer) DeleteApp(context.Context, *SingleAppRequest) (*App, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteApp not implemented")
 }
 func (UnimplementedAppManagementServer) GetApp(context.Context, *SingleAppRequest) (*App, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetApp not implemented")
@@ -206,6 +234,42 @@ func _AppManagement_CreateApp_Handler(srv interface{}, ctx context.Context, dec 
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AppManagementServer).CreateApp(ctx, req.(*App))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppManagement_UpdateApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(App)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppManagementServer).UpdateApp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/miragedebug.api.app.AppManagement/UpdateApp",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppManagementServer).UpdateApp(ctx, req.(*App))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AppManagement_DeleteApp_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SingleAppRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppManagementServer).DeleteApp(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/miragedebug.api.app.AppManagement/DeleteApp",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppManagementServer).DeleteApp(ctx, req.(*SingleAppRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -314,6 +378,14 @@ var AppManagement_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateApp",
 			Handler:    _AppManagement_CreateApp_Handler,
+		},
+		{
+			MethodName: "UpdateApp",
+			Handler:    _AppManagement_UpdateApp_Handler,
+		},
+		{
+			MethodName: "DeleteApp",
+			Handler:    _AppManagement_DeleteApp_Handler,
 		},
 		{
 			MethodName: "GetApp",

@@ -13,7 +13,8 @@ func serverCmd() *cobra.Command {
 	grpcAddr := ""
 	kubeconfig := ""
 	root := &cobra.Command{
-		Use: "server",
+		Use:   "server",
+		Short: "Start mirage-debug server",
 		Args: func(cmd *cobra.Command, args []string) error {
 			return nil
 		},

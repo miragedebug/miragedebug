@@ -38,6 +38,7 @@ func initCmd() *cobra.Command {
 			conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
+				return nil
 			}
 			defer conn.Close()
 			cfg, err := clientcmd.BuildConfigFromFlags("", config.GetKubeconfig())
@@ -71,6 +72,7 @@ type initAnswer struct {
 	WorkloadType string
 	Workload     string
 	Container    string
+	CustomConfig bool
 	Config       string
 }
 
@@ -267,9 +269,6 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 						if info.Name() == "main.go" {
 							paths = append(paths, "."+path.Dir(p))
 						}
-						if p == "vendor" {
-							return filepath.SkipDir
-						}
 						return nil
 					})
 					var p survey.Prompt
@@ -358,10 +357,26 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 				app_ := a.toApp()
 				bs, _ := yaml.Marshal(app_)
 				return &survey.Question{
+					Name: "customConfig",
+					Prompt: &survey.Confirm{
+						Message: "App Config yaml: \n" + string(bs) + "\nDo you want to customize it?",
+						Default: false,
+					},
+				}
+			},
+		},
+		{
+			question: func(a *initAnswer) *survey.Question {
+				if !a.CustomConfig {
+					return nil
+				}
+				app_ := a.toApp()
+				bs, _ := yaml.Marshal(app_)
+				return &survey.Question{
 					Name: "config",
 					Prompt: &survey.Editor{
-						Message:       "Confirm you config:",
 						Default:       string(bs),
+						HideDefault:   true,
 						AppendDefault: true,
 					},
 				}
@@ -378,9 +393,11 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 			return err
 		}
 	}
-	app_ := &app.App{}
-	if err := yaml.Unmarshal([]byte(answers.Config), app_); err != nil {
-		return fmt.Errorf("unmarshal config error: %v", err)
+	app_ := answers.toApp()
+	if answers.CustomConfig {
+		if err := yaml.Unmarshal([]byte(answers.Config), app_); err != nil {
+			return fmt.Errorf("unmarshal config error: %v", err)
+		}
 	}
 	a, err := appClient.CreateApp(context.Background(), app_)
 	if err != nil {

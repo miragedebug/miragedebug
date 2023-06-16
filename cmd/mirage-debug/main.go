@@ -26,6 +26,9 @@ func main() {
 	root.AddCommand(debugCmd())
 	root.AddCommand(serverCmd())
 	root.AddCommand(initCmd())
+	root.AddCommand(editCmd())
+	root.AddCommand(getCmd())
+	root.AddCommand(deleteCmd())
 	if err := root.Execute(); err != nil {
 		panic(err)
 	}

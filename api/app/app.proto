@@ -173,6 +173,17 @@ service AppManagement {
             body: "*"
         };
     }
+    rpc UpdateApp(App) returns (App) {
+        option (google.api.http) = {
+            put: "/api/v1/apps/{name}"
+            body: "*"
+        };
+    }
+    rpc DeleteApp(SingleAppRequest) returns (App) {
+        option (google.api.http) = {
+            delete: "/api/v1/apps/{name}"
+        };
+    }
     rpc GetApp(SingleAppRequest) returns (App) {
         option (google.api.http) = {
             get: "/api/v1/apps/{name}"
