@@ -34,7 +34,7 @@ func deleteCmd() *cobra.Command {
 				Name: appName,
 			})
 			if err != nil {
-				log.Fatalf("Rollback app failed: %v", err)
+				log.Errorf("Rollback app failed: %v", err)
 			}
 			_, err = c.DeleteApp(context.Background(), &app.SingleAppRequest{
 				Name: appName,
