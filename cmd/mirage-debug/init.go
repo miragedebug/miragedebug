@@ -30,6 +30,7 @@ import (
 func initCmd() *cobra.Command {
 	serverAddr := ""
 	kubeconfig := ""
+	answers := &initAnswer{}
 	c := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",
@@ -47,7 +48,7 @@ func initCmd() *cobra.Command {
 			}
 			kubeClient := kubernetes.NewForConfigOrDie(cfg)
 			c := app.NewAppManagementClient(conn)
-			if err := promptToCreateApp(c, kubeClient); err != nil {
+			if err := promptToCreateApp(c, kubeClient, answers); err != nil {
 				log.Fatalf("create app failed: %v", err)
 			}
 			return nil
@@ -56,6 +57,19 @@ func initCmd() *cobra.Command {
 	c.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "~/.kube/config", "Kubeconfig file path.")
 	c.PersistentFlags().StringVarP(&serverAddr, "server", "s", "127.0.0.1:38081", "Server grpc address")
 
+	c.PersistentFlags().StringVarP(&answers.Name, "name", "", "", "App name")
+	c.PersistentFlags().StringVarP(&answers.Language, "language", "", "", "Programming language")
+	c.PersistentFlags().StringVarP(&answers.Namespace, "namespace", "", "", "App running namespace")
+	c.PersistentFlags().StringVarP(&answers.WorkloadType, "workload-type", "", "", "App workload type")
+	c.PersistentFlags().StringVarP(&answers.Workload, "workload", "", "", "App workload name")
+	c.PersistentFlags().StringVarP(&answers.Container, "container", "", "", "App Container")
+	c.PersistentFlags().StringVarP(&answers.IDE, "ide", "", "", "IDE type")
+	c.PersistentFlags().StringVarP(&answers.Workdir, "workdir", "", "", "Source code path")
+	c.PersistentFlags().StringVarP(&answers.AppEntry, "app-entry", "", "", "Entry path of the app, relative to the workdir")
+	c.PersistentFlags().StringVarP(&answers.BuildCommand, "build-command", "", "", "How to build the app")
+	c.PersistentFlags().StringVarP(&answers.BuildOutput, "build-output", "", "", "Build output path")
+	c.PersistentFlags().StringVarP(&answers.RunArgs, "run-args", "", "", "Run args")
+
 	return c
 }
 
@@ -63,15 +77,15 @@ type initAnswer struct {
 	Name         string
 	Language     string
 	Namespace    string
+	WorkloadType string
+	Workload     string
+	Container    string
 	IDE          string
 	Workdir      string
 	AppEntry     string
 	BuildCommand string
 	BuildOutput  string
 	RunArgs      string
-	WorkloadType string
-	Workload     string
-	Container    string
 	CustomConfig bool
 	Config       string
 }
@@ -103,9 +117,10 @@ func (answers *initAnswer) toApp() *app.App {
 
 type questionWrap struct {
 	question func(a *initAnswer) *survey.Question
+	bind     *string
 }
 
-func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.Interface) error {
+func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.Interface, answers *initAnswer) error {
 	workloadPodTemplateMap := map[string]corev1.PodTemplateSpec{}
 	qs := []*questionWrap{
 		{
@@ -124,6 +139,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.Name,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -136,6 +152,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.Language,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -154,6 +171,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.Namespace,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -166,6 +184,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.WorkloadType,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -194,6 +213,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.Workload,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -211,6 +231,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.Container,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -236,6 +257,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.IDE,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -256,6 +278,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.Workdir,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -288,6 +311,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 				}
 				return nil
 			},
+			bind: &answers.AppEntry,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -313,6 +337,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.BuildCommand,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -334,6 +359,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.BuildOutput,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -351,6 +377,7 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 					},
 				}
 			},
+			bind: &answers.RunArgs,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -383,13 +410,15 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 			},
 		},
 	}
-	answers := initAnswer{}
 	for _, q := range qs {
-		question := q.question(&answers)
+		if !(q.bind == nil || *q.bind == "") {
+			continue
+		}
+		question := q.question(answers)
 		if question == nil {
 			continue
 		}
-		if err := survey.Ask([]*survey.Question{question}, &answers); err != nil {
+		if err := survey.Ask([]*survey.Question{question}, answers); err != nil {
 			return err
 		}
 	}

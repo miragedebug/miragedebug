@@ -1,0 +1,43 @@
+# d2-args: --sketch
+
+mirage: Mirage Debug {
+  client
+  server
+
+  client -> server: GRPC
+}
+
+cluster: Kubernetes cluster {
+  apiserver: API Server
+  pod: Pod you want to debug
+  apiserver -> pod: {
+    style: {
+      stroke: red
+    }
+  }
+}
+
+mirage.server -> cluster.apiserver: Operations
+
+mirage.server -> cluster.apiserver: Port Forward {
+  style: {
+    stroke: red
+  }
+}
+
+mirage.server -> cluster.pod: Install debugger tool\nCopy binary
+
+ide: IDE (VSCode, Goland and etc) {
+  source: Source Code
+  local-debugger: Local Debugger(Like GDB or dlv)
+}
+
+mirage.client -> ide: Write Config
+
+ide.local-debugger -> mirage.server: Debug Protocol {
+  style: {
+    stroke: red
+  }
+}
+
+direction: right
