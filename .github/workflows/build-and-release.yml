@@ -13,56 +13,38 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.16  # 或者你需要的 Go 版本
+          go-version: '1.20'
 
       - name: Build project
         run: |
-          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/mirage-debug-amd64 .
-          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bin/mirage-debug-arm64 .
+          GOOS=linux GOARCH=amd64 go build -o bin/mirage-debug-linux-amd64 ./cmd/mirage-debug
+          GOOS=linux GOARCH=arm64 go build -o bin/mirage-debug-linux-arm64 ./cmd/mirage-debug
+          GOOS=windows GOARCH=amd64 go build -o bin/mirage-debug-windows-amd64.exe ./cmd/mirage-debug
+          GOOS=darwin GOARCH=amd64 go build -o bin/mirage-debug-darwin-amd64 ./cmd/mirage-debug
+          GOOS=darwin GOARCH=arm64 go build -o bin/mirage-debug-darwin-arm64 ./cmd/mirage-debug
         env:
           GOPATH: ${{ github.workspace }}
 
       - name: Generate sha256 hashes
         run: |
-          sha256sum bin/mirage-debug-amd64 > bin/mirage-debug-amd64.sha256
-          sha256sum bin/mirage-debug-arm64 > bin/mirage-debug-arm64.sha256
+          sha256sum bin/mirage-debug-linux-amd64 > bin/mirage-debug-linux-amd64.sha256
+          sha256sum bin/mirage-debug-linux-arm64 > bin/mirage-debug-linux-arm64.sha256
+          sha256sum bin/mirage-debug-windows-amd64.exe > bin/mirage-debug-windows-amd64.sha256
+          sha256sum bin/mirage-debug-darwin-amd64 > bin/mirage-debug-darwin-amd64.sha256
+          sha256sum bin/mirage-debug-darwin-arm64 > bin/mirage-debug-darwin-arm64.sha256
 
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./bin/mirage-debug-amd64
-          asset_name: mirage-debug-amd64
-          asset_content_type: application/octet-stream
-
-      - name: Upload Release Asset
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./bin/mirage-debug-arm64
-          asset_name: mirage-debug-arm64
-          asset_content_type: application/octet-stream
-
-      - name: Upload SHA256 hash
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./bin/mirage-debug-amd64.sha256
-          asset_name: mirage-debug-amd64.sha256
-          asset_content_type: text/plain
-
-      - name: Upload SHA256 hash
-        uses: actions/upload-release-asset@v1.0.2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          upload_url: ${{ github.event.release.upload_url }}
-          asset_path: ./bin/mirage-debug-arm64.sha256
-          asset_name: mirage-debug-arm64.sha256
-          asset_content_type: text/plain
+          files: |
+            bin/mirage-debug-linux-amd64
+            bin/mirage-debug-linux-arm64
+            bin/mirage-debug-windows-amd64.exe
+            bin/mirage-debug-darwin-amd64
+            bin/mirage-debug-darwin-arm64
+            bin/mirage-debug-linux-amd64.sha256
+            bin/mirage-debug-linux-arm64.sha256
+            bin/mirage-debug-windows-amd64.sha256
+            bin/mirage-debug-darwin-amd64.sha256
+            bin/mirage-debug-darwin-arm64.sha256
