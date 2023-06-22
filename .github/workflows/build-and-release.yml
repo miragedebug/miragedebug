@@ -1,7 +1,9 @@
 name: Build and Release
-on:
-  release:
-    types: [created]
+#on:
+#  release:
+#    types: [created]
+
+on: push
 
 jobs:
   build:
@@ -22,8 +24,6 @@ jobs:
           GOOS=windows GOARCH=amd64 go build -o bin/mirage-debug-windows-amd64.exe ./cmd/mirage-debug
           GOOS=darwin GOARCH=amd64 go build -o bin/mirage-debug-darwin-amd64 ./cmd/mirage-debug
           GOOS=darwin GOARCH=arm64 go build -o bin/mirage-debug-darwin-arm64 ./cmd/mirage-debug
-        env:
-          GOPATH: ${{ github.workspace }}
 
       - name: Generate sha256 hashes
         run: |
