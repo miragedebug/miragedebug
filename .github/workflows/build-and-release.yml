@@ -1,0 +1,68 @@
+name: Build and Release
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16  # 或者你需要的 Go 版本
+
+      - name: Build project
+        run: |
+          GOOS=linux GOARCH=amd64 CGO_ENABLED=0 go build -o bin/mirage-debug-amd64 .
+          GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -o bin/mirage-debug-arm64 .
+        env:
+          GOPATH: ${{ github.workspace }}
+
+      - name: Generate sha256 hashes
+        run: |
+          sha256sum bin/mirage-debug-amd64 > bin/mirage-debug-amd64.sha256
+          sha256sum bin/mirage-debug-arm64 > bin/mirage-debug-arm64.sha256
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./bin/mirage-debug-amd64
+          asset_name: mirage-debug-amd64
+          asset_content_type: application/octet-stream
+
+      - name: Upload Release Asset
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./bin/mirage-debug-arm64
+          asset_name: mirage-debug-arm64
+          asset_content_type: application/octet-stream
+
+      - name: Upload SHA256 hash
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./bin/mirage-debug-amd64.sha256
+          asset_name: mirage-debug-amd64.sha256
+          asset_content_type: text/plain
+
+      - name: Upload SHA256 hash
+        uses: actions/upload-release-asset@v1.0.2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ github.event.release.upload_url }}
+          asset_path: ./bin/mirage-debug-arm64.sha256
+          asset_name: mirage-debug-arm64.sha256
+          asset_content_type: text/plain
