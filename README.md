@@ -1,4 +1,6 @@
-# miragedebug
+# MirageDebug
+
+English | [简体中文](./README_zh.md)
 
 MirageDebug: Local remote debugging for Kubernetes apps, enabling fully authentic environment debugging.
 
@@ -6,7 +8,7 @@ MirageDebug: Local remote debugging for Kubernetes apps, enabling fully authenti
 
 ## Installation
 
-### Install miragedebug
+### Install MirageDebug
 
 MirageDebug currently requires the GO runtime environment for installation, and can be installed using the following method:
 
@@ -16,11 +18,11 @@ go install github.com/miragedebug/miragedebug/cmd/mirage-debug@latest
 
 ## Usage
 
-### Mirage Debug Server - Background Service
+### MirageDebug Server - Background Service
 
-Mirage Debug Server is a background service that manages debugging sessions and provides relevant information about the debugging sessions.
+MirageDebug Server is a background service that manages debugging sessions and provides relevant information about the debugging sessions.
 
-#### Start Mirage Debug Server
+#### Start MirageDebug Server
 
 ```bash
 mirage-debug server
@@ -36,7 +38,7 @@ mirage-debug init
 
 ### Write IDE Configuration Files
 
-Mirage Debug can automatically generate debugging configuration files for different IDEs, making it easy to start debugging locally.
+MirageDebug can automatically generate debugging configuration files for different IDEs, making it easy to start debugging locally.
 
 ```bash
 mirage-debug config <APPNAME>
