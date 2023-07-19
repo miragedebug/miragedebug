@@ -13,7 +13,7 @@ import (
 // Return the stdout and stderr of the all commands.
 func ExecuteCommands(ctx context.Context, commands []string) ([]byte, []byte, error) {
 	shell := fmt.Sprintf("set -e\n%s", strings.Join(commands, "\n"))
-	cmd := exec.CommandContext(ctx, "sh", "-c", shell)
+	cmd := exec.CommandContext(ctx, "bash", "-c", shell)
 	out := bytes.NewBuffer(nil)
 	errOut := bytes.NewBuffer(nil)
 	cmd.Stdout = out
