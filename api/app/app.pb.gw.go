@@ -31,6 +31,24 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
+func request_AppManagement_GetServerInfo_0(ctx context.Context, marshaler runtime.Marshaler, client AppManagementClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := client.GetServerInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_AppManagement_GetServerInfo_0(ctx context.Context, marshaler runtime.Marshaler, server AppManagementServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq Empty
+	var metadata runtime.ServerMetadata
+
+	msg, err := server.GetServerInfo(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
 func request_AppManagement_ListApps_0(ctx context.Context, marshaler runtime.Marshaler, client AppManagementClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq Empty
 	var metadata runtime.ServerMetadata
@@ -517,6 +535,30 @@ func local_request_AppManagement_RollbackApp_0(ctx context.Context, marshaler ru
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAppManagementHandlerFromEndpoint instead.
 func RegisterAppManagementHandlerServer(ctx context.Context, mux *runtime.ServeMux, server AppManagementServer) error {
 
+	mux.Handle("GET", pattern_AppManagement_GetServerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/miragedebug.api.app.AppManagement/GetServerInfo", runtime.WithHTTPPathPattern("/api/v1/server-info"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_AppManagement_GetServerInfo_0(ctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_AppManagement_GetServerInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("GET", pattern_AppManagement_ListApps_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -774,6 +816,27 @@ func RegisterAppManagementHandler(ctx context.Context, mux *runtime.ServeMux, co
 // "AppManagementClient" to call the correct interceptors.
 func RegisterAppManagementHandlerClient(ctx context.Context, mux *runtime.ServeMux, client AppManagementClient) error {
 
+	mux.Handle("GET", pattern_AppManagement_GetServerInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/miragedebug.api.app.AppManagement/GetServerInfo", runtime.WithHTTPPathPattern("/api/v1/server-info"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_AppManagement_GetServerInfo_0(ctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_AppManagement_GetServerInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("GET", pattern_AppManagement_ListApps_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -967,6 +1030,8 @@ func RegisterAppManagementHandlerClient(ctx context.Context, mux *runtime.ServeM
 }
 
 var (
+	pattern_AppManagement_GetServerInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "server-info"}, ""))
+
 	pattern_AppManagement_ListApps_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "apps"}, ""))
 
 	pattern_AppManagement_CreateApp_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2}, []string{"api", "v1", "apps"}, ""))
@@ -987,6 +1052,8 @@ var (
 )
 
 var (
+	forward_AppManagement_GetServerInfo_0 = runtime.ForwardResponseMessage
+
 	forward_AppManagement_ListApps_0 = runtime.ForwardResponseMessage
 
 	forward_AppManagement_CreateApp_0 = runtime.ForwardResponseMessage

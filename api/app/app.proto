@@ -161,7 +161,17 @@ message AppList {
 
 message Empty {}
 
+message ServerInfo {
+    string version = 1;
+    int32 pid      = 2;
+}
+
 service AppManagement {
+    rpc GetServerInfo(Empty) returns (ServerInfo) {
+        option (google.api.http) = {
+            get: "/api/v1/server-info"
+        };
+    }
     rpc ListApps(Empty) returns (AppList) {
         option (google.api.http) = {
             get: "/api/v1/apps"

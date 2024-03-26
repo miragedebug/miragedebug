@@ -105,6 +105,17 @@ func (this *Empty) UnmarshalJSON(b []byte) error {
 	return AppUnmarshaler.Unmarshal(bytes.NewReader(b), this)
 }
 
+// MarshalJSON is a custom marshaler for ServerInfo
+func (this *ServerInfo) MarshalJSON() ([]byte, error) {
+	str, err := AppMarshaler.MarshalToString(this)
+	return []byte(str), err
+}
+
+// UnmarshalJSON is a custom unmarshaler for ServerInfo
+func (this *ServerInfo) UnmarshalJSON(b []byte) error {
+	return AppUnmarshaler.Unmarshal(bytes.NewReader(b), this)
+}
+
 var (
 	AppMarshaler   = &jsonpb.Marshaler{}
 	AppUnmarshaler = &jsonpb.Unmarshaler{AllowUnknownFields: true}

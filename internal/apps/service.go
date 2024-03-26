@@ -172,6 +172,12 @@ func (a *appManagement) getApp(name string) (*app.App, bool) {
 	return app_, err == nil
 }
 
+func (a *appManagement) GetServerInfo(ctx context.Context, empty *app.Empty) (*app.ServerInfo, error) {
+	return &app.ServerInfo{
+		Pid: int32(os.Getpid()),
+	}, nil
+}
+
 func (a *appManagement) ListApps(ctx context.Context, empty *app.Empty) (*app.AppList, error) {
 	entries, err := os.ReadDir(appsDir())
 	if err != nil {

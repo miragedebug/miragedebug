@@ -8,8 +8,6 @@ import (
 )
 
 func main() {
-	configRoot := ""
-	debug := false
 	root := &cobra.Command{
 		Use: "mirage-debug",
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
@@ -22,6 +20,9 @@ func main() {
 	}
 	root.PersistentFlags().StringVarP(&configRoot, "config", "c", "~/.mirage", "Config root path")
 	root.PersistentFlags().BoolVarP(&debug, "debug", "", true, "Enable debug config")
+	root.PersistentFlags().StringVarP(&httpAddr, "http-addr", "", ":38080", "HTTP listen address.")
+	root.PersistentFlags().StringVarP(&grpcAddr, "grpc-addr", "", ":38081", "GRPC listen address.")
+	root.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "~/.kube/config", "Kubeconfig file path.")
 	root.AddCommand(configCmd())
 	root.AddCommand(debugCmd())
 	root.AddCommand(serverCmd())

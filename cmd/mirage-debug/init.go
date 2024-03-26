@@ -28,15 +28,14 @@ import (
 )
 
 func initCmd() *cobra.Command {
-	serverAddr := ""
-	kubeconfig := ""
 	answers := &initAnswer{}
 	c := &cobra.Command{
 		Use:   "init",
 		Short: "Initialize a new project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			config.SetKubeconfig(kubeconfig)
-			conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			checkOrInitServerCommand()
+			conn, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
 				return nil
@@ -54,8 +53,7 @@ func initCmd() *cobra.Command {
 			return nil
 		},
 	}
-	c.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "~/.kube/config", "Kubeconfig file path.")
-	c.PersistentFlags().StringVarP(&serverAddr, "server", "s", "127.0.0.1:38081", "Server grpc address")
+	c.PersistentFlags().StringVarP(&grpcAddr, "server", "s", "127.0.0.1:38081", "Server grpc address")
 
 	c.PersistentFlags().StringVarP(&answers.Name, "name", "", "", "App name")
 	c.PersistentFlags().StringVarP(&answers.Language, "language", "", "", "Programming language")

@@ -14,7 +14,6 @@ import (
 )
 
 func getCmd() *cobra.Command {
-	serverAddr := ""
 	format := ""
 	all := false
 	c := &cobra.Command{
@@ -29,7 +28,8 @@ func getCmd() *cobra.Command {
 				log.Fatalf("please specify either --all or app names")
 				return nil
 			}
-			conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			checkOrInitServerCommand()
+			conn, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
 				return nil
@@ -62,7 +62,6 @@ func getCmd() *cobra.Command {
 			return nil
 		},
 	}
-	c.PersistentFlags().StringVarP(&serverAddr, "server", "s", "127.0.0.1:38081", "Server grpc address")
 	c.PersistentFlags().StringVarP(&format, "format", "o", "table", "Output format, table or yaml")
 	c.PersistentFlags().BoolVarP(&all, "all", "a", false, "List all apps")
 

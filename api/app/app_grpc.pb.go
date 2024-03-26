@@ -22,6 +22,7 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AppManagementClient interface {
+	GetServerInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ServerInfo, error)
 	ListApps(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AppList, error)
 	CreateApp(ctx context.Context, in *App, opts ...grpc.CallOption) (*App, error)
 	UpdateApp(ctx context.Context, in *App, opts ...grpc.CallOption) (*App, error)
@@ -49,6 +50,15 @@ type appManagementClient struct {
 
 func NewAppManagementClient(cc grpc.ClientConnInterface) AppManagementClient {
 	return &appManagementClient{cc}
+}
+
+func (c *appManagementClient) GetServerInfo(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*ServerInfo, error) {
+	out := new(ServerInfo)
+	err := c.cc.Invoke(ctx, "/miragedebug.api.app.AppManagement/GetServerInfo", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *appManagementClient) ListApps(ctx context.Context, in *Empty, opts ...grpc.CallOption) (*AppList, error) {
@@ -136,6 +146,7 @@ func (c *appManagementClient) RollbackApp(ctx context.Context, in *SingleAppRequ
 // All implementations must embed UnimplementedAppManagementServer
 // for forward compatibility
 type AppManagementServer interface {
+	GetServerInfo(context.Context, *Empty) (*ServerInfo, error)
 	ListApps(context.Context, *Empty) (*AppList, error)
 	CreateApp(context.Context, *App) (*App, error)
 	UpdateApp(context.Context, *App) (*App, error)
@@ -162,6 +173,9 @@ type AppManagementServer interface {
 type UnimplementedAppManagementServer struct {
 }
 
+func (UnimplementedAppManagementServer) GetServerInfo(context.Context, *Empty) (*ServerInfo, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetServerInfo not implemented")
+}
 func (UnimplementedAppManagementServer) ListApps(context.Context, *Empty) (*AppList, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListApps not implemented")
 }
@@ -200,6 +214,24 @@ type UnsafeAppManagementServer interface {
 
 func RegisterAppManagementServer(s grpc.ServiceRegistrar, srv AppManagementServer) {
 	s.RegisterService(&AppManagement_ServiceDesc, srv)
+}
+
+func _AppManagement_GetServerInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(Empty)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AppManagementServer).GetServerInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/miragedebug.api.app.AppManagement/GetServerInfo",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AppManagementServer).GetServerInfo(ctx, req.(*Empty))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _AppManagement_ListApps_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -371,6 +403,10 @@ var AppManagement_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "miragedebug.api.app.AppManagement",
 	HandlerType: (*AppManagementServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetServerInfo",
+			Handler:    _AppManagement_GetServerInfo_Handler,
+		},
 		{
 			MethodName: "ListApps",
 			Handler:    _AppManagement_ListApps_Handler,

@@ -19,7 +19,6 @@ import (
 )
 
 func debugCmd() *cobra.Command {
-	serverAddr := ""
 	c := &cobra.Command{
 		Use:   "debug",
 		Short: "start debug",
@@ -28,8 +27,9 @@ func debugCmd() *cobra.Command {
 				log.Fatalf("please specify the project name")
 				return nil
 			}
+			checkOrInitServerCommand()
 			appName := args[0]
-			conn, err := grpc.Dial(serverAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+			conn, err := grpc.Dial(grpcAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 			if err != nil {
 				log.Fatalf("did not connect: %v", err)
 				return nil
@@ -42,7 +42,6 @@ func debugCmd() *cobra.Command {
 			return nil
 		},
 	}
-	c.PersistentFlags().StringVarP(&serverAddr, "server", "s", "127.0.0.1:38081", "Server grpc address")
 
 	return c
 }

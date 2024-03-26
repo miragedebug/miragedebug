@@ -43,7 +43,7 @@ func InitOrLoadDLV(arch app.ArchType, cmds []string) (string, error) {
 		commands = []string{
 			fmt.Sprintf("git clone -b %s --depth=1 https://github.com/go-delve/delve %s", dlvVersion, t),
 			fmt.Sprintf("pushd %s", t),
-			fmt.Sprintf("GOOS=linux GOARCH=%s go build -o ./dlv-%s ./cmd/dlv", app.ToSystemArch(arch), app.ToSystemArch(arch)),
+			fmt.Sprintf("CGO_ENABLED=0 GOOS=linux GOARCH=%s go build -o ./dlv-%s ./cmd/dlv", app.ToSystemArch(arch), app.ToSystemArch(arch)),
 		}
 		defer os.Rename(path.Join(t, "dlv-"+app.ToSystemArch(arch)), f)
 	}
