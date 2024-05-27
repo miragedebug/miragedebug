@@ -61,6 +61,7 @@ func initCmd() *cobra.Command {
 	c.PersistentFlags().StringVarP(&answers.WorkloadType, "workload-type", "", "", "App workload type")
 	c.PersistentFlags().StringVarP(&answers.Workload, "workload", "", "", "App workload name")
 	c.PersistentFlags().StringVarP(&answers.Container, "container", "", "", "App Container")
+	c.PersistentFlags().StringVarP(&answers.RemoteArch, "remote-arch", "", "", "App Arch")
 	c.PersistentFlags().StringVarP(&answers.IDE, "ide", "", "", "IDE type")
 	c.PersistentFlags().StringVarP(&answers.Workdir, "workdir", "", "", "Source code path")
 	c.PersistentFlags().StringVarP(&answers.AppEntry, "app-entry", "", "", "Entry path of the app, relative to the workdir")
@@ -78,6 +79,7 @@ type initAnswer struct {
 	WorkloadType string
 	Workload     string
 	Container    string
+	RemoteArch   string
 	IDE          string
 	Workdir      string
 	AppEntry     string
@@ -86,6 +88,13 @@ type initAnswer struct {
 	RunArgs      string
 	CustomConfig bool
 	Config       string
+}
+
+func (answers *initAnswer) archType() app.ArchType {
+	if strings.EqualFold(answers.RemoteArch, "arm64") {
+		return app.ArchType_ARM64
+	}
+	return app.ArchType_AMD64
 }
 
 func (answers *initAnswer) toApp() *app.App {
@@ -97,7 +106,7 @@ func (answers *initAnswer) toApp() *app.App {
 			WorkloadType:  app.WorkloadType(app.WorkloadType_value[answers.WorkloadType]),
 			WorkloadName:  answers.Workload,
 			ContainerName: answers.Container,
-			TargetArch:    app.ArchType_AMD64,
+			TargetArch:    answers.archType(),
 		},
 		LocalConfig: &app.LocalConfig{
 			IdeType:            app.IDEType(app.IDEType_value[answers.IDE]),
@@ -151,6 +160,19 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 				}
 			},
 			bind: &answers.Language,
+		},
+		{
+			question: func(a *initAnswer) *survey.Question {
+				return &survey.Question{
+					Name: "remoteArch",
+					Prompt: &survey.Select{
+						Message: "What kind of arch:",
+						Options: []string{app.ArchType_AMD64.String(), app.ArchType_ARM64.String()},
+						Default: app.ArchType_AMD64.String(),
+					},
+				}
+			},
+			bind: &answers.RemoteArch,
 		},
 		{
 			question: func(a *initAnswer) *survey.Question {
@@ -323,9 +345,9 @@ func promptToCreateApp(appClient app.AppManagementClient, kubeClient kubernetes.
 								// todo support arm64
 								if a.AppEntry != "" {
 									a.BuildOutput = "/tmp/" + a.Name
-									return fmt.Sprintf("GOOS=linux GOARCH=amd64 go build -o /tmp/%s %s", a.Name, a.AppEntry)
+									return fmt.Sprintf("GOOS=linux GOARCH=%s go build -o /tmp/%s %s", app.ToSystemArch(a.archType()), a.Name, a.AppEntry)
 								}
-								return fmt.Sprintf("GOOS=linux GOARCH=amd64 go build -o /tmp/%s ./", a.Name)
+								return fmt.Sprintf("GOOS=linux GOARCH=%s go build -o /tmp/%s ./", app.ToSystemArch(a.archType()), a.Name)
 							case app.ProgramType_RUST.String():
 								return "cargo build"
 							default:

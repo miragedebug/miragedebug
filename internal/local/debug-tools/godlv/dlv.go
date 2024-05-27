@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	dlvVersion = "v1.21.0"
+	dlvVersion = "v1.22.1"
 )
 
 func defaultDlvRoot() string {
